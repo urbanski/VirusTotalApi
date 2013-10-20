@@ -91,7 +91,7 @@ class vtAPI():
 
         if len(files) == 1:
             files = glob.glob('{files}'.format(files=files[0]))
-            print files
+
         host  = 'www.virustotal.com'
         param = [('apikey',self.api)]
         url   = self.base + 'file/scan'
