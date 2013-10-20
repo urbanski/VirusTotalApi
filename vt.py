@@ -280,8 +280,7 @@ def main():
     sys.exit(1)
     
   options = opt.parse_args()
-  print options
-  #sys.exit()    
+      
   vt=vtAPI()
   
   if options.files: 
