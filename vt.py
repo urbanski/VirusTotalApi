@@ -52,7 +52,7 @@ class vtAPI():
     
     def __init__(self):
         
-        self.api = '<--------------PUBLIC-API-KEY-GOES-HERE----->'
+        #self.api = '<--------------PUBLIC-API-KEY-GOES-HERE----->'
         self.base = 'https://www.virustotal.com/vtapi/v2/'
     
     def getReport(self,hash_report):
@@ -91,16 +91,16 @@ class vtAPI():
 
         if len(files) == 1:
             files = glob.glob('{files}'.format(files=files[0]))
-
+            print files
         host  = 'www.virustotal.com'
         param = [('apikey',self.api)]
         url   = self.base + 'file/scan'
         
         for submit_file in files:
-            
-            file_upload = open(sublmit_file, 'rb').read()
-            files = [("file", files, file_upload)]
-            result  = postfile.post_multipart(host, url, param, files)
+
+            file_upload = open(submit_file, 'rb').read()
+            files  = [("file", submit_file, file_upload)]
+            result = postfile.post_multipart(host, url, param, files)
             jdata  =  json.loads(result)
             
             print '\n\tResults for MD5:    ',jdata['md5']
@@ -176,8 +176,7 @@ class vtAPI():
         
         else:
             print '\n[-] Not Found in VT\n'
-        
-    
+           
     def getDomain(self, domain, trendmicro, detected_urls, undetected_downloaded_samples, alexa_domain_info, wot_domain_info, websense_threatseeker,\
                   bitdefender, webutation_domain, detected_communicated, undetected_communicated, pcaps):
         
@@ -237,8 +236,7 @@ class vtAPI():
         
         else:
             print '\n[-] Not Found in VT\n'
-        
-        
+              
     def addComment(self, hash_co, comment):
         param  = {'resourse':md5,'comment':comment,'apikey':self.api}
         url    = self.base + "comments/put"
@@ -247,7 +245,7 @@ class vtAPI():
         jdata  =  json.loads(result.read())
         
         print '\nStatus:         ', jdata['verbose_msg'],'\n'
-          
+    
 def parse_search_report(jdata, hash_report, verbose, jsondump):
   if jdata['response_code'] != 1:
     print '\n[-] Not Found in VT\n'
@@ -301,9 +299,8 @@ def main():
   domain_opt.add_argument('--detected-downloaded-samples',      action='store_true', default=False, help='Domain/IP options: Show latest detected files that were downloaded from this ip')
   domain_opt.add_argument('--undetected-downloaded-samples',    action='store_true', default=False, help='Domain/IP options: Show latest undetected files that were downloaded from this domain/ip')
   domain_opt.add_argument('--detected-communicated',            action='store_true', default=False, help='Domain/IP Show latest detected files that communicate with this domain/ip')
-  domain_opt.add_argument('--undetected_communicated',  action='store_true', default=False, help='Show latest detected files that communicate with this domain/ip')
-  
-  
+  domain_opt.add_argument('--undetected_communicated',          action='store_true', default=False, help='Show latest detected files that communicate with this domain/ip')
+
   if len(sys.argv) < 2:
     opt.print_help()
     sys.exit(1)
