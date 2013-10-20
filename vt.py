@@ -310,8 +310,7 @@ def main():
 
   if options.add_comment and len(options.value) == 2:
     addComment(self, options.value[0], options.value[1])
-  else:
-    opt.print_help()
+
 
 if __name__ == '__main__':
     main()
