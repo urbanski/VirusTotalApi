@@ -79,6 +79,7 @@ class vtAPI():
         data   = urllib.urlencode(param)
         result = urllib2.urlopen(url,data)
         jdata  =  json.loads(result.read())
+        
         if isinstance(jdata, list):
             for jdata_part in jdata:
               print '[+] Check rescan result with sha256 in few minuts:','\n\tSHA256 :',jdata['sha256']
@@ -122,28 +123,28 @@ class vtAPI():
             sys.exit()
         else:
             url_upload = '\n'.join(map(lambda url: url, urls))
-            
-        param = {'resource':url_upload,'apikey':self.api}
-        url = self.base + 'url/scan'
-        data = urllib.urlencode(param)
-        result = urllib2.urlopen(url,data)
-        jdata  =  json.loads(result.read())
-        
-        if isinstance(jdata, list):
-          for jdata_part in jdata:
-            print '\tStatus',jdata_part['verbose_msg'], '\t', jdata_part['url']
-            print '\tPermanent link:', jdata_part['permlink']
-            
+        for url in [url_upload]:
+          param = {'url':url_upload,'apikey':self.api}
+          url = self.base + 'url/scan'
+          data = urllib.urlencode(param)
+          result = urllib2.urlopen(url,data)
+          jdata  =  json.loads(result.read())
+          
+          if isinstance(jdata, list):
+            for jdata_part in jdata:
+              print '\tStatus',jdata_part['verbose_msg'], '\t', jdata_part['url']
+              print '\tPermanent link:', jdata_part['permalink']
+              
+              if jsondump == True:
+                  md5 = hashlib.md5(jdata_part['url']).hexdigest()
+                  jsondump(jdata, md5)
+      
+          else:
+            print '\tStatus',jdata['verbose_msg'], jdata['url']
+            print '\tPermanent link:',jdata['permalink']
             if jsondump == True:
-                md5 = hashlib.md5(jdata_part['url']).hexdigest()
-                jsondump(jdata, md5)
-    
-        else:
-          print '\tStatus',jdata['verbose_msg'], jdata['url']
-          print '\tPermanent link:',jdata['permlink']
-          if jsondump == True:
-            md5 = hashlib.md5(jdata["url"]).hexdigest()
-            jsondump(jdata, md5)
+              md5 = hashlib.md5(jdata["url"]).hexdigest()
+              jsondump(jdata, md5)
         
     def getIP(self, ip, detected_urls, detected_downloaded_samples, undetected_downloaded_samples, detected_communicated, undetected_communicated):
         param  = {'ip':ip,'apikey':self.api}
@@ -314,7 +315,7 @@ def main():
     vt.fileScan(options.value)
   
   if options.urls: 
-    vt.urlScan(oprions.value)
+    vt.urlScan(options.value)
     
   if options.rescan:
     vt.rescan(options.value)
