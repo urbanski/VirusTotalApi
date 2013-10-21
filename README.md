@@ -6,7 +6,7 @@ https://www.virustotal.com/en/documentation/public-api/
 
 Orginal Script Author: Adam Meyers<br />
 Rewirtten & Modified: Chris Clark<br />
-And finally added full api support by Andriy Brukhovetskyy (doomedraven)<br />
+And finally has been added full API support by Andriy Brukhovetskyy (doomedraven)<br />
 
 License: Do whatever you want with it :)<br />
 
