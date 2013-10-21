@@ -118,11 +118,14 @@ class vtAPI():
         
         if len(urls) == 1:
             url_upload = urls[0]
+        elif isinstance(urls, basestring):
+            url_upload = urls  
         elif len(urls) > 4:
             print '[-] To many urls for scanning, MAX 4'
             sys.exit()
         else:
             url_upload = '\n'.join(map(lambda url: url, urls))
+            
         for url in [url_upload]:
           param = {'url':url_upload,'apikey':self.api}
           url = self.base + 'url/scan'
