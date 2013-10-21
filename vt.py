@@ -149,7 +149,7 @@ class vtAPI():
           if isinstance(jdata, list):
             for jdata_part in jdata:
               print '\tStatus',jdata_part['verbose_msg'], '\t', jdata_part['url']
-              print '\tPermanent link:', jdata_part['permalink']
+              print '\tPermanent link:', jdata_part['permalink'],'\n'
               
               if jsondump == True:
                   md5 = hashlib.md5(jdata_part['url']).hexdigest()
@@ -157,7 +157,7 @@ class vtAPI():
       
           else:
             print '\tStatus',jdata['verbose_msg'], jdata['url']
-            print '\tPermanent link:',jdata['permalink']
+            print '\tPermanent link:',jdata['permalink'],'\n'
             if jsondump == True:
               md5 = hashlib.md5(jdata["url"]).hexdigest()
               jsondump(jdata, md5)
@@ -351,7 +351,7 @@ def main():
     vt.getIP(options.value[0], options.detected_urls, options.detected_downloaded_samples, options.undetected_downloaded_samples,\
              options.detected_communicated, options.undetected_communicated)
   
-  if options.search or options.jsondump or options.verbose and not options.domain and not options.ip:
+  if options.search or options.jsondump or options.verbose and not options.domain and not options.ip and not options.urls:
     parse_search_report(vt.getReport(options.value[0]), options.value[0], options.verbose, options.jsondump)
 
   if options.add_comment and len(options.value) == 2:
