@@ -68,17 +68,28 @@ class vtAPI():
         
         if len(hash_re) == 1:
             hash_re = hash_re[0]
+        elif isinstance(hash_re, basestring):
+            hash_re = hash_re
         elif len(hash_re) > 25:
             print '[-] To many urls for scanning, MAX 25'
             sys.exit()
         else:
             hash_re = ', '.join(map(lambda hash_part: hash_part, hash_re))
         
-        param  = {'resource':hash_re,'apikey':self.api}
-        url    = self.base + 'file/rescan'
-        data   = urllib.urlencode(param)
-        result = urllib2.urlopen(url,data)
-        jdata  =  json.loads(result.read())
+        for hash_part in [hash_re]:
+            param  = {'resource':hash_part,'apikey':self.api}
+            url    = self.base + 'file/rescan'
+            data   = urllib.urlencode(param)
+            result = urllib2.urlopen(url,data)
+            jdata  =  json.loads(result.read())
+            
+            if isinstance(jdata, list):
+                for jdata_part in jdata:
+                  print '[+] Check rescan result with sha256 in few minuts:','\n\tSHA256 :',jdata['sha256']
+                  print '\tPermanent link', jdata['permalink']
+            else:
+              print '[+] Check rescan result with sha256 in few minuts:','\n\tSHA256 :',jdata['sha256']
+              print '\tPermanent link', jdata['permalink']
         
         if isinstance(jdata, list):
             for jdata_part in jdata:
@@ -92,6 +103,8 @@ class vtAPI():
 
         if len(files) == 1:
             files = glob.glob('{files}'.format(files=files[0]))
+        elif isinstance(files, basestring):
+            files = glob.glob('{files}'.format(files=files))
 
         host  = 'www.virustotal.com'
         param = [('apikey',self.api)]
@@ -149,7 +162,7 @@ class vtAPI():
               md5 = hashlib.md5(jdata["url"]).hexdigest()
               jsondump(jdata, md5)
         
-    def getIP(self, ip, detected_urls, detected_downloaded_samples, undetected_downloaded_samples, detected_communicated, undetected_communicated):
+    def getIP(self, ip, detected_urls=False, detected_downloaded_samples=False, undetected_downloaded_samples=False, detected_communicated=False, undetected_communicated=False):
         param  = {'ip':ip,'apikey':self.api}
         url    = self.base + 'ip-address/report'
         data   = urllib.urlencode(param)
@@ -181,8 +194,8 @@ class vtAPI():
         else:
             print '\n[-] Not Found in VT\n'
            
-    def getDomain(self, domain, trendmicro, detected_urls, undetected_downloaded_samples, alexa_domain_info, wot_domain_info, websense_threatseeker,\
-                  bitdefender, webutation_domain, detected_communicated, undetected_communicated, pcaps):
+    def getDomain(self, domain, trendmicro=False, detected_urls=False, undetected_downloaded_samples=False, alexa_domain_info=False, wot_domain_info=False,\
+                  websense_threatseeker=False, bitdefender=False, webutation_domain=False, detected_communicated=False, undetected_communicated=False, pcaps=False):
         
         """
         Get domain last scan, detected urls and resolved IPs
