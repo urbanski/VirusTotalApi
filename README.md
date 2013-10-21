@@ -1,7 +1,8 @@
 VirusTotal public APIv2 Full support
 ===================
 
-This script added to VT API documentation https://www.virustotal.com/en/documentation/public-api/
+This script was made public into the official VT API documentation page.
+https://www.virustotal.com/en/documentation/public-api/
 
 Orginal Script Author: Adam Meyers<br />
 Rewirtten & Modified: Chris Clark<br />
