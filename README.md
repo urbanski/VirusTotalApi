@@ -52,7 +52,7 @@ usage: value [-h] [-f] [-u] [-r] [-d] [-i] [-s] [-c] [-v] [-j]
 Scan/Search/ReScan
 
 positional arguments:
-  value                 Enter the MD5, Path to File or Url
+  value                 Enter the Hash, Path to File or Url
 
 optional arguments:
   -h, --help            show this help message and exit
