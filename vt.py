@@ -276,7 +276,7 @@ def parse_search_report(jdata, hash_report, verbose, jsondump):
 def main():
   opt=argparse.ArgumentParser('value',description='Scan/Search/ReScan')
 
-  opt.add_argument('value', nargs='*', help='Enter the MD5, Path to File or Url')
+  opt.add_argument('value', nargs='*', help='Enter the Hash, Path to File or Url')
   opt.add_argument('-f', '--file-scan',   action='store_true', dest='files',      help='File(s) scan, support linux name wildcard, example: /home/user/*malware*, sleeping 5 seconds, between uploads, by default work over HTTPS')
   opt.add_argument('-u', '--url-scan',    action='store_true', dest='urls',       help='Url scan, support space separated list, Max 4 urls')
   opt.add_argument('-r', '--rescan',      action='store_true',                    help='Force Rescan with Current A/V Definitions by MD5/SHA1/SHA256, support space separated list, MAX 25 hashes')
