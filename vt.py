@@ -6,6 +6,7 @@
 # No Licence or warranty expressed or implied, use however you wish! 
 # For more information look at https://www.virustotal.com/es/documentation/public-api
 
+import os
 import glob
 import time
 import hashlib
@@ -67,16 +68,16 @@ class vtAPI():
     def rescan(self,hash_re):
         
         if len(hash_re) == 1:
-            hash_re = hash_re[0]
-        elif isinstance(hash_re, basestring):
             hash_re = hash_re
-        elif len(hash_re) > 25:
+        elif isinstance(hash_re, basestring):
+            hash_re = [hash_re]
+        elif len(hash_re) > 25 and not isinstance(hash_re, basestring):
             print '[-] To many urls for scanning, MAX 25'
             sys.exit()
         else:
             hash_re = ', '.join(map(lambda hash_part: hash_part, hash_re))
         
-        for hash_part in [hash_re]:
+        for hash_part in hash_re:
             param  = {'resource':hash_part,'apikey':self.api}
             url    = self.base + 'file/rescan'
             data   = urllib.urlencode(param)
@@ -90,14 +91,6 @@ class vtAPI():
             else:
               print '[+] Check rescan result with sha256 in few minuts:','\n\tSHA256 :',jdata['sha256']
               print '\tPermanent link', jdata['permalink']
-        
-        if isinstance(jdata, list):
-            for jdata_part in jdata:
-              print '[+] Check rescan result with sha256 in few minuts:','\n\tSHA256 :',jdata['sha256']
-              print '\tPermanent link', jdata['permalink']
-        else:
-          print '[+] Check rescan result with sha256 in few minuts:','\n\tSHA256 :',jdata['sha256']
-          print '\tPermanent link', jdata['permalink']
     
     def fileScan(self,files):
 
@@ -109,23 +102,27 @@ class vtAPI():
         host  = 'www.virustotal.com'
         param = [('apikey',self.api)]
         url   = self.base + 'file/scan'
-        
-        for submit_file in files:
 
-            file_upload = open(submit_file, 'rb').read()
-            files  = [("file", submit_file, file_upload)]
-            result = postfile.post_multipart(host, url, param, files)
-            jdata  =  json.loads(result)
+        for submit_file in files:
             
-            print '\n\tResults for MD5:    ',jdata['md5']
-            print '\tResults for SHA1:   ',jdata['sha1']
-            print '\tResults for SHA256: ',jdata['sha256']
+            if os.path.isfile(submit_file):
+              print 'Submiting file: {filename}'.format(filename = submit_file)
+
+              file_upload = open(submit_file, 'rb').read()
+              files  = [("file", submit_file, file_upload)]
+              result = postfile.post_multipart(host, url, param, files)
+              jdata  =  json.loads(result)
             
-            print '\n\tStatus        ',jdata['verbose_msg']
-            print '\tPermament link',jdata['permalink'],'\n'
+              print '\n\tResults for MD5:    ',jdata['md5']
+              print '\tResults for SHA1:   ',jdata['sha1']
+              print '\tResults for SHA256: ',jdata['sha256']
             
-            if len(files) != 1:
+              print '\n\tStatus        ',jdata['verbose_msg']
+              print '\tPermament link',jdata['permalink'],'\n'
+            
+              if len(files) != 1:
                 time.sleep(5)
+
         
     def urlScan(self, urls):
         
@@ -133,34 +130,37 @@ class vtAPI():
             url_upload = urls[0]
         elif isinstance(urls, basestring):
             url_upload = urls  
-        elif len(urls) > 4:
+        elif len(urls) > 4 and not isinstance(urls, basestring):
             print '[-] To many urls for scanning, MAX 4'
             sys.exit()
         else:
             url_upload = '\n'.join(map(lambda url: url, urls))
             
-        for url in [url_upload]:
-          param = {'url':url_upload,'apikey':self.api}
-          url = self.base + 'url/scan'
-          data = urllib.urlencode(param)
-          result = urllib2.urlopen(url,data)
-          jdata  =  json.loads(result.read())
-          
-          if isinstance(jdata, list):
-            for jdata_part in jdata:
-              print '\tStatus',jdata_part['verbose_msg'], '\t', jdata_part['url']
-              print '\tPermanent link:', jdata_part['permalink'],'\n'
-              
-              if jsondump == True:
-                  md5 = hashlib.md5(jdata_part['url']).hexdigest()
-                  jsondump(jdata, md5)
-      
-          else:
-            print '\tStatus',jdata['verbose_msg'], jdata['url']
-            print '\tPermanent link:',jdata['permalink'],'\n'
+        
+        print 'Submitting url(s) for analysis: \n\t{url}'.format(url = url_upload.replace('\n','\n\t'))
+
+        param = {'url':url_upload,'apikey':self.api}
+        url = self.base + 'url/scan'
+        data = urllib.urlencode(param)
+        result = urllib2.urlopen(url,data)
+        jdata  =  json.loads(result.read())
+
+        if isinstance(jdata, list):
+          for jdata_part in jdata:
+            print '\n\tStatus',jdata_part['verbose_msg'], '\t', jdata_part['url']
+            print '\tPermanent link:', jdata_part['permalink']
+                
             if jsondump == True:
-              md5 = hashlib.md5(jdata["url"]).hexdigest()
+              md5 = hashlib.md5(jdata_part['url']).hexdigest()
               jsondump(jdata, md5)
+               
+        
+        else:
+          print '\n\tStatus',jdata['verbose_msg'], jdata['url']
+          print '\tPermanent link:',jdata['permalink'],'\n'
+          if jsondump == True:
+            md5 = hashlib.md5(jdata["url"]).hexdigest()
+            jsondump(jdata, md5)
         
     def getIP(self, ip, detected_urls=False, detected_downloaded_samples=False, undetected_downloaded_samples=False, detected_communicated=False, undetected_communicated=False):
         param  = {'ip':ip,'apikey':self.api}
