@@ -4,6 +4,8 @@ VirusTotal public APIv2 Full support
 This script was made public into the official VT API documentation page.
 https://www.virustotal.com/en/documentation/public-api/
 
+For working, you need to set your api key at line 55<br />
+
 Orginal Script Author: Adam Meyers<br />
 Rewirtten & Modified: Chris Clark<br />
 And finally has been added full API support by Andriy Brukhovetskyy (doomedraven)<br />
@@ -23,6 +25,19 @@ Status:          Domain found in dataset
 	2013-10-19 	74.125.193.100
 	2013-10-19 	74.125.193.101
 	....
+
+
+python vt.py -us -ur cuatvientos.org   
+Searching for url(s) report: 
+	cuatvientos.org
+
+	Scanned on:           2013-10-23 18:11:02
+	Detected by:          0 / 47
+
+	Status      : Scan finished, scan information embedded in this object
+	Scanned url : http://cuatvientos.org/
+
+	Permanent Link:      https://www.virustotal.com/url/9be15bbec0dacb3ec93c462998e0ea8017efd80353a38882a94e0d5dc906e3dc/analysis/1382551862/ 	
 	
 	
 python vt.py -s 0a1ab00a6f0f7f886fa4ff48fc70a953
