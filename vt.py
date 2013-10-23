@@ -211,7 +211,7 @@ class vtAPI():
               print '\t','    --    ' if data['last_resolved'] == None else data['last_resolved'].split(" ")[0],'\t',data['hostname']
         
         else:
-            print '\n[-] Not Found in VT\n'
+            print '\n[-] {info}\n'.format(info=jdata['verbose_msg'])
            
     def getDomain(self, domain, dump, trendmicro=False, detected_urls=False, undetected_downloaded_samples=False, alexa_domain_info=False,\
                   wot_domain_info=False, websense_threatseeker=False, bitdefender=False, webutation_domain=False,\
@@ -272,7 +272,7 @@ class vtAPI():
               print "\t","    --    " if row["last_resolved"] == None else row["last_resolved"].split(" ")[0], '\t', row['ip_address']
         
         else:
-            print '\n[-] Not Found in VT\n'
+            print '\n[-] {info}\n'.format(info=jdata['verbose_msg'])
               
     def addComment(self, hash_co, comment):
         param  = {'resource':md5,'comment':comment,'apikey':self.api}
@@ -285,7 +285,7 @@ class vtAPI():
     
 def parse_report(jdata, hash_report, verbose, dump, url_report = False):
   if jdata['response_code'] != 1:
-    print '\n[-] Not Found in VT\n'
+    print '\n[-] {info}\n'.format(info=jdata['verbose_msg'])
     sys.exit()
   
   print '\n\tScanned on:          ',jdata['scan_date']
