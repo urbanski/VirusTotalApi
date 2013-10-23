@@ -41,7 +41,7 @@ python vt.py -s 0a1ab00a6f0f7f886fa4ff48fc70a953
 	Permanent Link:      https://www.virustotal.com/file/be9c0025b99f0f8c55f448ba619ba303fc65eba862cac65a00ea83d480e5efec/analysis/1382278391/ 
 	
 	
-usage: value [-h] [-f] [-u] [-r] [-d] [-i] [-s] [-c] [-v] [-j]
+usage: value [-h] [-f] [-us] [-ur] [-r] [-d] [-i] [-s] [-c] [-v] [-j]
              [--alexa-domain-info] [--wot-domain-info] [--trendmicro]
              [--websense-threatseeker] [--bitdefender] [--webutation_domain]
              [--detected-urls] [--pcaps] [--detected-downloaded-samples]
@@ -59,7 +59,10 @@ optional arguments:
   -f, --file-scan       File(s) scan, support linux name wildcard, example:
                         /home/user/*malware*, sleeping 5 seconds, between
                         uploads, by default work over HTTPS
-  -u, --url-scan        Url scan, support space separated list, Max 4 urls
+  -us, --url-scan       Url scan, support space separated list, Max 4 urls
+  -ur, --url-report     Url(s) report, support space separated list, Max 4
+                        urls, you can use --url-report --url-scan options for
+                        analysing url(s) if they are not in VT data base
   -r, --rescan          Force Rescan with Current A/V Definitions by
                         MD5/SHA1/SHA256, support space separated list, MAX 25
                         hashes
@@ -69,7 +72,7 @@ optional arguments:
   -c, --add-comment     Add comment to analysis report, first hash and then
                         your comment, supported hashes MD5/SHA1/SHA256
   -v, --verbose         Turn on verbosity of VT reports
-  -j, --jsondump        Dumps the full VT report to file (VTDL{md5}.json), if
+  -j, --dump            Dumps the full VT report to file (VTDL{md5}.json), if
                         you (re)scan many files/urls, their json data will be
                         dumped to separetad files
 
@@ -101,4 +104,4 @@ Options -v/--verbose active verbose mode in search, and if you look for domain i
 this will be activate all domain verbose mode options
 </code></pre>
  
- Tested on Mac Os X 10.8.5 and Ubuntu 12.04.4
+ Tested on Mac Os X 10.8.5/10.9 and Ubuntu 12.04.4
