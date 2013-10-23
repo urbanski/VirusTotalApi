@@ -43,16 +43,15 @@ def print_results(jdata, undetected_downloaded_samples, detected_communicated,\
                                                                                            else row['scan_date'].split(' ')[0],'\t', row['url']
 
 def jsondump(jdata, md5):
-    if jsondump == True:
-        jsondumpfile = open('VTDL{md5}.json'.format(md5 = md5), 'w')
-        pprint(it, jsondumpfile)
-        jsondumpfile.close()
-        print '\n\tJSON Written to File -- VTDL{md5}.json'.format(md5 = md5)
+      jsondumpfile = open('VTDL_{md5}.json'.format(md5 = md5), 'w')
+      pprint(jdata, jsondumpfile)
+      jsondumpfile.close()
+      print '\n\tJSON Written to File -- VTDL_{md5}.json'.format(md5 = md5)
  
 class vtAPI():
     
     def __init__(self):
-        
+      
         #self.api = '<--------------PUBLIC-API-KEY-GOES-HERE----->'
         self.base = 'https://www.virustotal.com/vtapi/v2/'
     
@@ -124,7 +123,9 @@ class vtAPI():
                 time.sleep(5)
 
         
-    def urlScan(self, urls):
+    def url_scan_and_report(self, urls, key, verbose, dump=False, add_to_scan='0'):
+        
+        md5 = ''
         
         if len(urls) == 1:
             url_upload = urls[0]
@@ -134,42 +135,60 @@ class vtAPI():
             print '[-] To many urls for scanning, MAX 4'
             sys.exit()
         else:
-            url_upload = '\n'.join(map(lambda url: url, urls))
+            if key == 'scan':
+              url_upload = '\n'.join(map(lambda url: url, urls))
+            elif key == 'report':
+              url_upload = ', '.join(map(lambda url: url, urls))
             
+        if key == 'scan':
+          print 'Submitting url(s) for analysis: \n\t{url}'.format(url = url_upload.replace('\n','\n\t'))
+          param = {'url':url_upload,'apikey':self.api}
+          url   = self.base + 'url/scan'
+          
+        elif key == 'report':
+          print 'Searching for url(s) report: \n\t{url}'.format(url = url_upload.replace(', ','\n\t'))
+          param = {'resource':url_upload,'apikey':self.api, 'scan':add_to_scan}
+          url   = self.base + 'url/report'  
         
-        print 'Submitting url(s) for analysis: \n\t{url}'.format(url = url_upload.replace('\n','\n\t'))
-
-        param = {'url':url_upload,'apikey':self.api}
-        url = self.base + 'url/scan'
         data = urllib.urlencode(param)
         result = urllib2.urlopen(url,data)
         jdata  =  json.loads(result.read())
 
         if isinstance(jdata, list):
           for jdata_part in jdata:
-            print '\n\tStatus',jdata_part['verbose_msg'], '\t', jdata_part['url']
-            print '\tPermanent link:', jdata_part['permalink']
-                
-            if jsondump == True:
+
+            if dump == True:
               md5 = hashlib.md5(jdata_part['url']).hexdigest()
-              jsondump(jdata, md5)
-               
-        
+
+            if key == 'report':
+                  url_report = True
+                  parse_report(jdata_part, md5, verbose, dump, url_report)
+            
+            elif key == 'scan':
+              print '\n\tStatus',jdata_part['verbose_msg'], '\t', jdata_part['url']
+              print '\tPermanent link:', jdata_part['permalink']
+
         else:
-          print '\n\tStatus',jdata['verbose_msg'], jdata['url']
-          print '\tPermanent link:',jdata['permalink'],'\n'
-          if jsondump == True:
+          if dump == True:
             md5 = hashlib.md5(jdata["url"]).hexdigest()
-            jsondump(jdata, md5)
+          
+          if key == 'report':
+                  url_report = True
+                  parse_report(jdata, md5, verbose, dump, url_report)
+                  
+          elif key == 'scan':
+              print '\n\tStatus',jdata['verbose_msg'], '\t', jdata['url']
+              print '\tPermanent link:', jdata['permalink']
         
-    def getIP(self, ip, detected_urls=False, detected_downloaded_samples=False, undetected_downloaded_samples=False, detected_communicated=False, undetected_communicated=False):
+    def getIP(self, ip, dump=False, detected_urls=False, detected_downloaded_samples=False, undetected_downloaded_samples=False,\
+                                                         detected_communicated=False, undetected_communicated=False):
         param  = {'ip':ip,'apikey':self.api}
         url    = self.base + 'ip-address/report'
         data   = urllib.urlencode(param)
         result = urllib.urlopen('{url}?{data}'.format(url = url, data = data))
         jdata  =  json.loads(result.read())
         
-        if jsondump == True:
+        if dump == True:
             md5 = hashlib.md5(ip).hexdigest()
             jsondump(jdata, md5)
         
@@ -194,8 +213,9 @@ class vtAPI():
         else:
             print '\n[-] Not Found in VT\n'
            
-    def getDomain(self, domain, trendmicro=False, detected_urls=False, undetected_downloaded_samples=False, alexa_domain_info=False, wot_domain_info=False,\
-                  websense_threatseeker=False, bitdefender=False, webutation_domain=False, detected_communicated=False, undetected_communicated=False, pcaps=False):
+    def getDomain(self, domain, dump, trendmicro=False, detected_urls=False, undetected_downloaded_samples=False, alexa_domain_info=False,\
+                  wot_domain_info=False, websense_threatseeker=False, bitdefender=False, webutation_domain=False,\
+                                         detected_communicated=False, undetected_communicated=False, pcaps=False):
         
         """
         Get domain last scan, detected urls and resolved IPs
@@ -208,7 +228,7 @@ class vtAPI():
         
         if jdata['response_code'] == 1:
             
-            if jsondump == True:
+            if dump == True:
                 md5 = hashlib.md5(domain).hexdigest()
                 jsondump(jdata, md5)
                 
@@ -255,7 +275,7 @@ class vtAPI():
             print '\n[-] Not Found in VT\n'
               
     def addComment(self, hash_co, comment):
-        param  = {'resourse':md5,'comment':comment,'apikey':self.api}
+        param  = {'resource':md5,'comment':comment,'apikey':self.api}
         url    = self.base + "comments/put"
         data   = urllib.urlencode(param)
         result = urllib2.Request(url, data)
@@ -263,31 +283,41 @@ class vtAPI():
         
         print '\nStatus:         ', jdata['verbose_msg'],'\n'
     
-def parse_search_report(jdata, hash_report, verbose, jsondump):
+def parse_report(jdata, hash_report, verbose, dump, url_report = False):
   if jdata['response_code'] != 1:
     print '\n[-] Not Found in VT\n'
     sys.exit()
-
+  
   print '\n\tScanned on:          ',jdata['scan_date']
   print '\tDetected by:         ',jdata['positives'],'/',jdata['total']
+   
+  if not url_report:
+    print '\n\tSophos Detection:    ',jdata['scans']['Sophos']['result']
+    print '\tKaspersky Detection: ',jdata['scans']['Kaspersky']['result']
+    print '\tTrendMicro Detection:',jdata['scans']['TrendMicro']['result']
 
-  print '\n\tSophos Detection:    ',jdata['scans']['Sophos']['result']
-  print '\tKaspersky Detection: ',jdata['scans']['Kaspersky']['result']
-  print '\tTrendMicro Detection:',jdata['scans']['TrendMicro']['result']
+    print '\n\tResults for MD5:    ',jdata['md5']
+    print '\tResults for SHA1:   ',jdata['sha1']
+    print '\tResults for SHA256: ',jdata['sha256']
   
-
-  print '\n\tResults for MD5:    ',jdata['md5']
-  print '\tResults for SHA1:   ',jdata['sha1']
-  print '\tResults for SHA256: ',jdata['sha256']
-  
-  if jsondump == True:
-    jsondump(jdata, hash_report)
+  else:
+    print '\n\tStatus      :',jdata['verbose_msg']
+    print '\tScanned url : {url}'.format(url = jdata['url'])
 
   if verbose == True:
     print '\n\tVerbose VirusTotal Information Output:\n'
     for x in jdata['scans']:
-     print '\t', x,'\t' if len(x) < 7 else '','\t' if len(x) < 14 else '','\t',jdata['scans'][x]['detected'], '\t',jdata['scans'][x]['result'] 
-   
+     
+     if not url_report:
+       print '\t', x,'\t' if len(x) < 7 else '','\t' if len(x) < 14 else '','\t',jdata['scans'][x]['detected'], '\t',jdata['scans'][x]['result'] 
+     
+     else:
+       print '\t', x,'\t' if len(x) < 7 else '','\t' if len(x) < 15 else '', '\t' if len(x) < 20 else '','\t',\
+       jdata['scans'][x]['detected'],'\t', jdata['scans'][x]['result'], '\n\t\t\t{detail}'.format(detail = jdata['scans'][x]['detail'])\
+                                                                                                   if jdata['scans'][x].get('detail',0) else ''
+  if dump == True:
+    jsondump(jdata, hash_report)
+    
   print "\n\tPermanent Link:     ",jdata['permalink'],"\n"
 
 def main():
@@ -295,14 +325,16 @@ def main():
 
   opt.add_argument('value', nargs='*', help='Enter the Hash, Path to File or Url')
   opt.add_argument('-f', '--file-scan',   action='store_true', dest='files',      help='File(s) scan, support linux name wildcard, example: /home/user/*malware*, sleeping 5 seconds, between uploads, by default work over HTTPS')
-  opt.add_argument('-u', '--url-scan',    action='store_true', dest='urls',       help='Url scan, support space separated list, Max 4 urls')
+  opt.add_argument('-us', '--url-scan',   action='store_true',                    help='Url scan, support space separated list, Max 4 urls')
+  opt.add_argument('-ur', '--url-report', action='store_true',                    help='Url(s) report, support space separated list, Max 4 urls, you can use --url-report --url-scan options for analysing url(s) if they are not in VT data base')
+  
   opt.add_argument('-r', '--rescan',      action='store_true',                    help='Force Rescan with Current A/V Definitions by MD5/SHA1/SHA256, support space separated list, MAX 25 hashes')
   opt.add_argument('-d', '--domain-info', action='store_true', dest='domain',     help='Retrieving domain reports')
   opt.add_argument('-i', '--ip-info',     action='store_true', dest='ip',         help='Retrieving IP address reports')
   opt.add_argument('-s', '--search',      action='store_true',                    help='Search VirusTotal by MD5/SHA1/SHA256')
   opt.add_argument('-c', '--add-comment', action='store_true',                    help='Add comment to analysis report, first hash and then your comment, supported hashes MD5/SHA1/SHA256')
   opt.add_argument('-v', '--verbose',     action='store_true', dest='verbose',    help='Turn on verbosity of VT reports')
-  opt.add_argument('-j', '--jsondump',    action='store_true',                    help='Dumps the full VT report to file (VTDL{md5}.json), if you (re)scan many files/urls, their json data will be dumped to separetad files')
+  opt.add_argument('-j', '--dump',    action='store_true',                    help='Dumps the full VT report to file (VTDL{md5}.json), if you (re)scan many files/urls, their json data will be dumped to separetad files')
   
   domain_opt = opt.add_argument_group('Domain/IP verbose mode options, by default just show resolved IPs/Passive DNS')
   domain_opt.add_argument('--alexa-domain-info',                action='store_true', default=False, help='Just Domain option: Show Alexa domain info')
@@ -318,44 +350,54 @@ def main():
   domain_opt.add_argument('--detected-communicated',            action='store_true', default=False, help='Domain/IP Show latest detected files that communicate with this domain/ip')
   domain_opt.add_argument('--undetected_communicated',          action='store_true', default=False, help='Show latest detected files that communicate with this domain/ip')
 
-  if len(sys.argv) < 2:
-    opt.print_help()
-    sys.exit(1)
+  #if len(sys.argv) < 2:
+  #  opt.print_help()
+  #  sys.exit(1)
     
   options = opt.parse_args()
 
   vt=vtAPI()
   
-  if options.files:
+  if not options.value:
+      opt.print_help()
+      sys.exit()
     
-    vt.fileScan(options.value)
-  
-  if options.urls: 
-    vt.urlScan(options.value)
-    
-  if options.rescan:
-    vt.rescan(options.value)
-
-  if options.verbose:
+  if options.verbose and (options.domain or options.ip):
     options.detected_urls = options.undetected_downloaded_samples = options.wot_domain_info = options.websense_threatseeker = \
                             options.detected_communicated = options.trendmicro = options.undetected_communicated = \
                             options.alexa_domain_info = options.bitdefender = options.webutation_domain = options.pcaps = \
                             options.detected_downloaded_samples = True
+  
+  if options.files:
+    vt.fileScan(options.value)
+  
+  elif options.url_scan and not options.url_report: 
+    vt.url_scan_and_report(options.value, "scan", options.verbose, options.dump)
+  
+  elif options.url_report and options.url_scan:
+      vt.url_scan_and_report(options.value, "report", options.verbose, options.dump, '1')
+    
+  elif options.rescan:
+    vt.rescan(options.value)
 
-  if options.domain:
-    vt.getDomain(options.value[0], options.trendmicro, options.detected_urls, options.undetected_downloaded_samples, options.alexa_domain_info,\
+  elif options.domain:
+    vt.getDomain(options.value[0], options.dump, options.trendmicro, options.detected_urls, options.undetected_downloaded_samples, options.alexa_domain_info,\
                  options.wot_domain_info, options.websense_threatseeker, options.bitdefender, options.webutation_domain, options.detected_communicated,\
                  options.undetected_communicated, options.pcaps)
 
-  if options.ip:
-    vt.getIP(options.value[0], options.detected_urls, options.detected_downloaded_samples, options.undetected_downloaded_samples,\
+  elif options.ip:
+    vt.getIP(options.value[0], options.dump, options.detected_urls, options.detected_downloaded_samples, options.undetected_downloaded_samples,\
              options.detected_communicated, options.undetected_communicated)
   
-  if options.search or options.jsondump or options.verbose and not options.domain and not options.ip and not options.urls:
-    parse_search_report(vt.getReport(options.value[0]), options.value[0], options.verbose, options.jsondump)
+  elif options.search and not options.domain and not options.ip and not options.url_scan and not options.url_report:
+    parse_report(vt.getReport(options.value[0]), options.value[0], options.verbose, options.dump)
 
-  if options.add_comment and len(options.value) == 2:
+  elif options.add_comment and len(options.value) == 2:
     addComment(self, options.value[0], options.value[1])
+    
+  else:
+    opt.print_help()
+    sys.exit()
 
 if __name__ == '__main__':
     main()
