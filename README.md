@@ -12,7 +12,8 @@ And finally has been added full public and private API support by Andriy Brukhov
 
 License: Do whatever you want with it :)<br />
 
-I hope soon I will do public the manual
+Small manual with examples
+http://www.doomedraven.com/2013/11/script-virustotal-public-and-private.html
 
 Some examples:<br />
 
