@@ -19,6 +19,7 @@ import hashlib
 import argparse
 import requests
 import texttable as tt
+import ConfigParser
 from operator import methodcaller
 from dateutil.relativedelta import relativedelta
 
@@ -1398,7 +1399,16 @@ def main(apikey):
     sys.exit()
 
 if __name__ == '__main__':
-      
-    apikey = '<--------------apikey-here-------->'
-    
+    apikey = None
+    if (apikey == None):
+        #try reading config file
+        try:
+            confpath = os.path.expanduser("~/.vtapi")
+            config = ConfigParser.RawConfigParser()
+            config.read(confpath)
+            apikey = config.get('vt', 'apikey')
+        except Exception:
+            print "No API key provided and cannot read ~/.vtapi. Specify an API key in vt.py or in ~/.vtapi"
+            sys.exit(-1)
+   
     main(apikey)
