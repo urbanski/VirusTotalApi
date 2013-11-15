@@ -1346,6 +1346,7 @@ def main(apikey):
     
   options = opt.parse_args()
 
+  #it's just a check, if you want set your apikey into value, go to the end of file
   if apikey == '<--------------apikey-here-------->': 
 
       apikey = parse_conf(options.config_file) 
