@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2.7
 
 # Full VT APIv2 functions by Andriy (aka doomedraven) Brukhovetskyy (Twitter : @d00m3dr4v3n)
 # No Licence or warranty expressed or implied, use however you wish! 
