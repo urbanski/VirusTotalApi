@@ -4,13 +4,25 @@ VirusTotal public and private APIv2 Full support
 This script was made public into the official VT API documentation page.
 https://www.virustotal.com/en/documentation/public-api/
 
-For working, you need to set your api key at line 1402(end of file)<br />
+For set api key: <br />
+
+15.11.2013 Updates:
+
+1) Added support for get apikey from file, now you can put is as before into apikey value at line 1454 or put it to config file
+if api key not in value , will check by default ~/.vtapi, but you can put it to another file and use -c/--config-file option
+
+2) Limit reached issue patched 
+
+special thanks to @kellewic and @urbanski
+
+
 Dependence: requests, texttable and python-dateutils you install it from pip/other packet manager or download and install from oficial pages
 
 few public API functions getted from Chris Clark script<br />
 And finally has been added full public and private API support by Andriy Brukhovetskyy (doomedraven)<br />
 
 License: Do whatever you want with it :)<br />
+
 
 Small manual with examples
 http://www.doomedraven.com/2013/11/script-virustotal-public-and-private.html
