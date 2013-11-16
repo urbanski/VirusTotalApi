@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2.7
 
 # Full VT APIv2 functions by Andriy (aka doomedraven) Brukhovetskyy (Twitter : @d00m3dr4v3n)
 # No Licence or warranty expressed or implied, use however you wish! 
@@ -18,6 +18,7 @@ import time
 import hashlib
 import argparse
 import requests
+import ConfigParser
 import texttable as tt
 import ConfigParser
 from operator import methodcaller
@@ -26,7 +27,26 @@ from dateutil.relativedelta import relativedelta
 def private_api_access_error():
       print '\n[!] You don\'t have permission for this operation, Looks like you trying to access to PRIVATE API functions\n'
       sys.exit()
-    
+
+def parse_conf(file_name):
+      
+      try:
+            confpath = os.path.expanduser(file_name)
+            
+            if os.path.exists(confpath):
+                  
+                  config = ConfigParser.RawConfigParser()
+                  config.read(confpath)
+                  apikey = config.get('vt', 'apikey')
+                  
+                  return apikey
+            
+            else:
+                  sys.exit('\nFile {0} don\'t exists\n'.format(confpath))
+         
+      except Exception:
+            sys.exit('No API key provided and cannot read ~/.vtapi. Specify an API key in vt.py or in ~/.vtapi or  in your file')
+        
 def pretty_print(block, headers, sizes = False, align = False):
   
   tab = tt.Texttable()
@@ -143,7 +163,7 @@ def print_results(jdata, undetected_downloaded_samples, detected_communicated,\
     if jdata.get('detected_urls') and detected_urls:
         
         print '\n[+] Latest detected URLs\n'
-        pretty_print(sorted(jdata['detected_urls'], key=methodcaller('get', 'scan_date'), reverse=True), ['positives', 'total','scan_date','url'], [15, 10, 20, 100], ['c', 'c', 'c', 'c'])
+        pretty_print(sorted(jdata['detected_urls'], key=methodcaller('get', 'scan_date'), reverse=True), ['positives', 'total','scan_date','url'], [15, 10, 20, 100], ['c', 'c', 'c', 'l'])
         
 def parse_report(jdata, hash_report, verbose, dump, url_report = False, not_exit = False):
   
@@ -163,9 +183,9 @@ def parse_report(jdata, hash_report, verbose, dump, url_report = False, not_exit
       if jdata.get('url') : print 'Scanned url :\n\t {url}'.format(url = jdata['url'])
   
   else:
-    print '\n\tSophos Detection     :',jdata['scans']['Sophos']['result']
-    print '\tKaspersky Detection  :',jdata['scans']['Kaspersky']['result']
-    print '\tTrendMicro Detection :',jdata['scans']['TrendMicro']['result']
+    if jdata['scans']['Sophos']['result']     : print '\n\tSophos Detection     :',jdata['scans']['Sophos']['result']
+    if jdata['scans']['Kaspersky']['result']  : print '\tKaspersky Detection  :',jdata['scans']['Kaspersky']['result']
+    if jdata['scans']['TrendMicro']['result'] : print '\tTrendMicro Detection :',jdata['scans']['TrendMicro']['result']
 
     print '\n\tResults for MD5    : ',jdata['md5']
     print '\tResults for SHA1   : ',jdata['sha1']
@@ -188,13 +208,72 @@ def parse_report(jdata, hash_report, verbose, dump, url_report = False, not_exit
   if jdata.get('permalink') : print "\n\tPermanent Link : {0}\n".format(jdata['permalink'])
   
   return True
-  
+ 
+## Static variable decorator for function
+def static_var(varname, value):
+    def decorate(func):
+        
+        setattr(func, varname, value)
+        
+        return func
+    
+    return decorate
+
+## Track how many times we issue a request
+@static_var("counter", 0)
+## Track when the first request was sent
+@static_var("start_time", 0)
+def get_response(url, method="get", **kwargs):
+      
+      ## Set on first request
+      if get_response.start_time == 0:
+            get_response.start_time = time.time()
+
+      ## Increment every request
+      get_response.counter = 1
+
+      jdata    = ''
+      response = ''
+      
+      while True:
+            
+            response = getattr(requests, method)(url, **kwargs)
+
+            if response.status_code == 403:
+                  private_api_access_error()
+
+            if response.status_code != 204:
+                  
+                  try:  
+                        jdata = response.json()  
+            
+                  except:
+                        jdata = response.json
+                  
+                  break
+            
+            ## Determine minimum time we need to wait for limit to reset
+            wait_time = 59 - int(time.time() - get_response.start_time)
+
+            if wait_time < 0:
+                  wait_time = 60
+
+            print "Reached per minute limit of {0:d}; waiting {1:d} seconds\n".format(get_response.counter, wait_time)
+
+            time.sleep(wait_time)
+
+            ## Reset static vars
+            get_response.counter    = 0
+            get_response.start_time = 0
+                  
+      return jdata, response
+
 class vtAPI():
     
     def __init__(self, apikey):
 
-        self.api  = apikey
-        self.base = 'https://www.virustotal.com/vtapi/v2/'
+        self.api   = apikey
+        self.base  = 'https://www.virustotal.com/vtapi/v2/'
     
     def getReport(self, hash_report, allinfo = False, verbose = False, dump = False, not_exit = False):
       
@@ -232,16 +311,7 @@ class vtAPI():
                 
             url = self.base + 'file/report'
             
-            response = requests.get(url, params=params)
-            
-            if response.status_code == 403:
-              private_api_access_error()
-              
-            try:  
-              jdata = response.json()  
-            
-            except:
-              jdata = response.json
+            jdata, response = get_response(url, params=params)
               
       if jdata['response_code'] == 0 or jdata['response_code'] == -1:
             if not_exit:
@@ -251,7 +321,7 @@ class vtAPI():
                   if jdata.get('verbose_msg') : print '\n[!] Status : {verb_msg}\n'.format(verb_msg = jdata['verbose_msg'])
                   sys.exit()
 
-      if allinfo:
+      if allinfo == '1':
             
           if dump:
               jsondump(jdata, name)
@@ -339,7 +409,7 @@ class vtAPI():
           return True
       
       else:
-          result = parse_report(jdata, hash_report, verbose, dump, not_exit)
+          result = parse_report(jdata, hash_report, verbose, dump, False, not_exit)
           return result
     
     def rescan(self, hash_rescan, date = False, period = False, repeat = False, notify_url = False, notify_changes_only = False, delete = False):
@@ -386,15 +456,7 @@ class vtAPI():
                       params.setdefault('notify_changes_only',notify_changes_only)
                   
             
-            response = requests.post(url, params=params)
-            
-            if response.status_code == 403:
-              private_api_access_error()
-              
-            try:  
-              jdata = response.json()  
-            except:
-              jdata = response.json 
+            jdata, response = get_response(url, params=params, method='post')
             
             if jdata['response_code'] == 0 or jdata['response_code'] == -1:
               if jdata.get('verbose_msg') : print '\n[!] Status : {verb_msg}\n'.format(verb_msg = jdata['verbose_msg'])
@@ -434,6 +496,8 @@ class vtAPI():
           if notify_changes_only:
             params.setdefault('notify_changes_only',notify_changes_only)
 
+        url = self.base+'file/scan'
+
         for submit_file in files:
 
             readed = open(submit_file, 'rb').read()
@@ -442,7 +506,7 @@ class vtAPI():
             not_exit = True
           
             result = self.getReport(md5, False, verbose, dump, not_exit)
-
+            
             if not result:
                   if (os.path.getsize(submit_file) / 1048576) <= 32:
                         
@@ -454,16 +518,8 @@ class vtAPI():
                       files  = {"file": (file_name, open(submit_file, 'rb'))}
                       
                       try:
-                          response = requests.post(self.base+'file/scan', files=files, params=params)
                         
-                          if response.status_code == 403:
-                            private_api_access_error()
-                      
-                          try:  
-                            jdata = response.json()  
-                        
-                          except:
-                            jdata = response.json
+                          jdata, response = get_response(url, files=files, params=params, method="post")
                           
                           if jdata['response_code'] == 0 or jdata['response_code'] == -1:
                             if jdata.get('verbose_msg') : print '\n[!] Status : {verb_msg}\n'.format(verb_msg = jdata['verbose_msg'])
@@ -533,17 +589,7 @@ class vtAPI():
               params = {'resource':url_upload,'apikey':self.api, 'scan':add_to_scan}
               url   = self.base + 'url/report'  
             
-            response = requests.post(url, params)
-            
-            if response.status_code == 403:
-              private_api_access_error()
-              
-            try:  
-              jdata = response.json()  
-            
-            except:
-              jdata = response.json
-              
+            jdata, response = get_response(url, params=params, method="post")  
         
         if isinstance(jdata, list):
             
@@ -599,16 +645,9 @@ class vtAPI():
           params  = {'ip':ip,'apikey':self.api}
           url     = self.base + 'ip-address/report'
         
-          response = requests.get(url, params=params)
-          
-          if response.status_code == 403:
-            private_api_access_error()
-              
-          try:  
-            jdata = response.json()  
-          except:
-            jdata = response.json 
-        
+          jdata, response = get_response(url, params=params)
+
+             
       if jdata['response_code'] == 0 or jdata['response_code'] == -1:
           if jdata.get('verbose_msg') : print '\n[!] Status : {verb_msg}\n'.format(verb_msg = jdata['verbose_msg'])
           sys.exit()  
@@ -653,15 +692,7 @@ class vtAPI():
             params  = {'domain':domain,'apikey':self.api}
             url    = self.base + "domain/report"
         
-            response = requests.get(url, params=params)
-            
-            if response.status_code == 403:
-              private_api_access_error()
-              
-            try:  
-              jdata = response.json()  
-            except:
-              jdata = response.json
+            jdata, response = get_response(url, params=params)
               
         if jdata['response_code'] == 0 or jdata['response_code'] == -1:
           if jdata.get('verbose_msg') : print '\n[!] Status : {verb_msg}\n'.format(verb_msg = jdata['verbose_msg'])
@@ -774,15 +805,7 @@ class vtAPI():
           else:
             params.setdefault('date', name)
           
-          response = requests.get(url, params = params)
-            
-          if response.status_code == 403:
-            private_api_access_error()
-          
-          try:  
-            jdata = response.json()  
-          except:
-            jdata = response.json
+          jdata, response = get_response(url, params=params)
           
       if jdata['response_code'] == 0 or jdata['response_code'] == -1:
           if jdata.get('verbose_msg') : print '\n[!] Status : {verb_msg}\n'.format(verb_msg = jdata['verbose_msg'])
@@ -832,7 +855,7 @@ class vtAPI():
           url = self.base + 'comments/put'
           params.setdefault('comment',before_or_commentz)
           
-          response = requests.post(url, params=params)
+          jdata, response = get_response(url, params=params, method="post")
           
         elif action == 'get':
           url = self.base + 'comments/get'
@@ -840,19 +863,11 @@ class vtAPI():
           if before_or_comment:
             params.setdefault('before', before_or_comment)
           
-          response = requests.get(url, params=params)
+          jdata, response = get_response(url, params=params)
           
         else:
             print '\n[!] Support only get/add comments action \n'
-            sys.exit()
-            
-        if response.status_code == 403:
-          private_api_access_error()
-              
-        try:  
-          jdata = response.json()  
-        except:
-          jdata = response.json 
+            sys.exit() 
       
       if jdata['response_code'] == 0 or jdata['response_code'] == -1:
         if jdata.get('verbose_msg') : print '\n[!] Status : {verb_msg}\n'.format(verb_msg = jdata['verbose_msg'])
@@ -902,14 +917,11 @@ class vtAPI():
         params = {'apikey': self.api, 'hash': hash_file}
         
         if file_type == 'pcap':
-          response = requests.get(self.base + 'file/network-traffic', params=params)
+          jdata, response = get_response(self.base + 'file/network-traffic', params=params)
           name = 'VTDL_{hash}.pcap'.format(hash = hash_file)
           
         elif file_type == 'file':
-          response = requests.get(self.base + 'file/download', params=params)
-            
-          if response.status_code == 403:
-            private_api_access_error()
+          jdata, response = get_response(self.base + 'file/download', params=params)
             
           if jdata['response_code'] == 0 or jdata['response_code'] == -1:
             if jdata.get('verbose_msg') : print '\n[!] Status : {verb_msg}\n'.format(verb_msg = jdata['verbose_msg'])
@@ -970,16 +982,7 @@ class vtAPI():
                   
                   url = self.base + 'url/distribution' 
             
-            response = requests.get(url, params=params)
-
-            if response.status_code == 403:
-              private_api_access_error()
-             
-            try:
-              jdata = response.json()
-              
-            except TypeError:
-              jdata = response.json 
+            jdata, response = get_response(url, params=params)
       
       if jdata['response_code'] == 0 or jdata['response_code'] == -1:
         if jdata.get('verbose_msg') : print '\n[!] Status : {verb_msg}\n'.format(verb_msg = jdata['verbose_msg'])
@@ -1074,15 +1077,7 @@ class vtAPI():
             params = {'apikey': self.api, 'hash': search_hash}
             url    = self.base + 'file/behaviour'
             
-            response = requests.get(url, params=params)
-            
-            if response.status_code == 403:
-              private_api_access_error()
-              
-            try:  
-              jdata = response.json()  
-            except:
-              jdata = response.json
+            jdata, response = get_response(url, params=params)
       
       if jdata['response_code'] == 0 or jdata['response_code'] == -1:
           if jdata.get('verbose_msg') : print '\n[!] Status : {verb_msg}\n'.format(verb_msg = jdata['verbose_msg'])
@@ -1233,6 +1228,7 @@ def main(apikey):
   opt=argparse.ArgumentParser('value',description='Scan/Search/ReScan/JSON parse')
 
   opt.add_argument('value', nargs='*', help='Enter the Hash, Path to File(s) or Url(s)')
+  opt.add_argument('-c', '--config-file', action='store',  default='~/.vtapi', help='Path to configuration file')
   
   opt.add_argument('-f', '--file-scan',   action='store_true', dest='files', help='File(s) scan, support linux name wildcard, example: /home/user/*malware*, if file was scanned, you will see scan info, for full scan report use verbose mode, and dump if you want save already scanned samples')
   opt.add_argument('-u',  '--url-scan',   action='store_true',               help='Url scan, support space separated list, Max 4 urls (or 25 if you have private api)')
@@ -1305,6 +1301,14 @@ def main(apikey):
   dist.add_argument('--massive-download', action='store_true', default=False, help='Show information how to get massive download work')
     
   options = opt.parse_args()
+ 
+  #it's just a check, if you want set your apikey into value, go to the end of file
+  if apikey == '<--------------apikey-here-------->': 
+
+      apikey = parse_conf(options.config_file) 
+      
+      if apikey is None:
+            sys.exit('No API key provided and cannot read ~/.vtapi. Specify an API key in vt.py or in ~/.vtapi or  in your file')
 
   vt=vtAPI(apikey)
   
@@ -1395,20 +1399,14 @@ def main(apikey):
   #    vt.clusters(options.value, options.dump, True)
     
   else:
-    opt.print_help()
-    sys.exit()
+    
+    sys.exit(opt.print_help())
 
 if __name__ == '__main__':
-    apikey = None
-    if (apikey == None):
-        #try reading config file
-        try:
-            confpath = os.path.expanduser("~/.vtapi")
-            config = ConfigParser.RawConfigParser()
-            config.read(confpath)
-            apikey = config.get('vt', 'apikey')
-        except Exception:
-            print "No API key provided and cannot read ~/.vtapi. Specify an API key in vt.py or in ~/.vtapi"
-            sys.exit(-1)
-   
+    '''
+    You can especificate apikey as value or put it to config file
+    '''
+    
+    apikey = '<--------------apikey-here-------->'
+        
     main(apikey)
