@@ -6,6 +6,9 @@ https://www.virustotal.com/en/documentation/public-api/
 
 For set api key: <br />
 
+16.11.2013 Updates:
+1) Code optimization/cleaning, and small print fix
+
 15.11.2013 Updates:
 
 1) Added support for get apikey from file, now you can put is as before into apikey value at line 1454 or put it to config file
@@ -15,6 +18,7 @@ if api key not in value , will check by default ~/.vtapi, but you can put it to 
 
 special thanks to @kellewic and @urbanski
 
+=== FIN ===
 
 Dependence: requests, texttable and python-dateutils you install it from pip/other packet manager or download and install from oficial pages
 
