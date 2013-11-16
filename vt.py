@@ -183,9 +183,13 @@ def parse_report(jdata, hash_report, verbose, dump, url_report = False, not_exit
       if jdata.get('url') : print 'Scanned url :\n\t {url}'.format(url = jdata['url'])
   
   else:
-    if jdata['scans']['Sophos']['result']     : print '\n\tSophos Detection     :',jdata['scans']['Sophos']['result']
-    if jdata['scans']['Kaspersky']['result']  : print '\tKaspersky Detection  :',jdata['scans']['Kaspersky']['result']
-    if jdata['scans']['TrendMicro']['result'] : print '\tTrendMicro Detection :',jdata['scans']['TrendMicro']['result']
+    display_engines = ['Sophos','Kaspersky', 'TrendMicro']
+    for engine in display_engines:
+      try:
+        if jdata['scans'][engine]['result']     : print '\n\t%s Detection     :' % engine ,jdata['scans'][engine]['result']
+      except KeyError:
+        print '\n\t%s Detection     : None' % engine
+
 
     print '\n\tResults for MD5    : ',jdata['md5']
     print '\tResults for SHA1   : ',jdata['sha1']
